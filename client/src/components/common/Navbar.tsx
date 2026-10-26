@@ -268,8 +268,8 @@ export const Navbar: React.FC = () => {
                     className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
                   >
                     <div className="w-8 h-8 rounded-full bg-hospital-navy text-white font-semibold flex items-center justify-center text-xs shadow-sm">
-                      {user.firstName[0]}
-                      {user.lastName[0]}
+                      {user.firstName ? user.firstName[0] : 'U'}
+                      {user.lastName ? user.lastName[0] : ''}
                     </div>
                     <div className="hidden lg:block text-left">
                       <p className="text-xs font-semibold text-slate-800 leading-tight">

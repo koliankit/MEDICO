@@ -50,23 +50,26 @@ export const BookingPage: React.FC = () => {
   const loadMetadata = async () => {
     try {
       const depts = await api.departments.getAll();
-      setDepartments(depts);
+      setDepartments(Array.isArray(depts) ? depts : []);
     } catch (err) {
       console.error(err);
+      setDepartments([]);
     }
   };
 
   const loadDoctors = async () => {
     try {
       const docs = await api.doctors.getAll(selectedDeptId || undefined);
-      setDoctors(docs);
-      if (selectedDocId && !docs.some((d) => d.id === selectedDocId)) {
+      const safeDocs = Array.isArray(docs) ? docs : [];
+      setDoctors(safeDocs);
+      if (selectedDocId && !safeDocs.some((d) => d.id === selectedDocId)) {
         setSelectedDocId('');
-      } else if (!selectedDocId && docs.length > 0) {
-        setSelectedDocId(docs[0].id);
+      } else if (!selectedDocId && safeDocs.length > 0) {
+        setSelectedDocId(safeDocs[0].id);
       }
     } catch (err) {
       console.error(err);
+      setDoctors([]);
     }
   };
 
@@ -238,7 +241,7 @@ export const BookingPage: React.FC = () => {
                   className="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-hospital-teal/20 focus:border-hospital-teal bg-white"
                 >
                   <option value="">All Departments</option>
-                  {departments.map((d) => (
+                  {(Array.isArray(departments) ? departments : []).map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name}
                     </option>
@@ -257,7 +260,7 @@ export const BookingPage: React.FC = () => {
                   className="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-hospital-teal/20 focus:border-hospital-teal bg-white"
                 >
                   <option value="">Select Doctor...</option>
-                  {doctors.map((d) => (
+                  {(Array.isArray(doctors) ? doctors : []).map((d) => (
                     <option key={d.id} value={d.id}>
                       Dr. {d.user.firstName} {d.user.lastName} ({d.specialization} - ₹{d.consultationFee})
                     </option>

@@ -15,9 +15,10 @@ export const DepartmentsPage: React.FC = () => {
   const loadDepartments = async () => {
     try {
       const data = await api.departments.getAll();
-      setDepartments(data);
+      setDepartments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setDepartments([]);
     } finally {
       setLoading(false);
     }
@@ -56,7 +57,7 @@ export const DepartmentsPage: React.FC = () => {
         <div className="p-12 text-center text-xs text-slate-400">Loading departments...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {departments.map((dept) => (
+          {(Array.isArray(departments) ? departments : []).map((dept) => (
             <div
               key={dept.id}
               className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"

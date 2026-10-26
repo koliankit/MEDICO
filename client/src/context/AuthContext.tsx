@@ -30,7 +30,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (token) {
         const userData = await api.auth.me();
-        setUser(userData);
+        if (userData && userData.firstName) {
+          setUser(userData);
+        } else {
+          setUser(null);
+        }
       } else {
         setUser(null);
       }

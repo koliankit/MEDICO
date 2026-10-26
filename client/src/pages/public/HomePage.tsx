@@ -38,11 +38,14 @@ export const HomePage: React.FC = () => {
         api.doctors.getAll(),
         api.education.getArticles(),
       ]);
-      setDepartments(deptData);
-      setDoctors(docData);
-      setArticles(artData.slice(0, 3));
+      setDepartments(Array.isArray(deptData) ? deptData : []);
+      setDoctors(Array.isArray(docData) ? docData : []);
+      setArticles(Array.isArray(artData) ? artData.slice(0, 3) : []);
     } catch (err) {
       console.error('Failed to load homepage data:', err);
+      setDepartments([]);
+      setDoctors([]);
+      setArticles([]);
     }
   };
 
@@ -279,7 +282,7 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {departments.slice(0, 6).map((dept) => (
+            {(Array.isArray(departments) ? departments : []).slice(0, 6).map((dept) => (
               <div
                 key={dept.id}
                 className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
@@ -334,7 +337,7 @@ export const HomePage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {doctors.slice(0, 3).map((doc) => (
+          {(Array.isArray(doctors) ? doctors : []).slice(0, 3).map((doc) => (
             <div
               key={doc.id}
               className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
@@ -411,7 +414,7 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {articles.map((art) => (
+            {(Array.isArray(articles) ? articles : []).map((art) => (
               <div
                 key={art.id}
                 className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"

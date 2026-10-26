@@ -23,18 +23,21 @@ export const DoctorsPage: React.FC = () => {
         api.departments.getAll(),
         api.doctors.getAll(selectedDept || undefined),
       ]);
-      setDepartments(deptList);
-      setDoctors(docList);
+      setDepartments(Array.isArray(deptList) ? deptList : []);
+      setDoctors(Array.isArray(docList) ? docList : []);
     } catch (err) {
       console.error(err);
+      setDepartments([]);
+      setDoctors([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredDoctors = doctors.filter((doc) => {
-    const fullName = `${doc.user.firstName} ${doc.user.lastName}`.toLowerCase();
-    const spec = doc.specialization.toLowerCase();
+  const safeDoctors = Array.isArray(doctors) ? doctors : [];
+  const filteredDoctors = safeDoctors.filter((doc) => {
+    const fullName = `${doc?.user?.firstName || ''} ${doc?.user?.lastName || ''}`.toLowerCase();
+    const spec = (doc?.specialization || '').toLowerCase();
     const term = searchTerm.toLowerCase();
     return fullName.includes(term) || spec.includes(term);
   });
@@ -74,7 +77,7 @@ export const DoctorsPage: React.FC = () => {
             className="w-full md:w-64 py-2.5 px-3 rounded-xl border border-slate-200 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-hospital-teal/20 focus:border-hospital-teal bg-white"
           >
             <option value="">All Clinical Departments</option>
-            {departments.map((d) => (
+            {(Array.isArray(departments) ? departments : []).map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name}
               </option>

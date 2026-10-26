@@ -15,19 +15,21 @@ export const EducationPage: React.FC = () => {
   const loadArticles = async () => {
     try {
       const data = await api.education.getArticles();
-      setArticles(data);
+      setArticles(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setArticles([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const categories = ['ALL', ...Array.from(new Set(articles.map((a) => a.category)))];
+  const safeArticles = Array.isArray(articles) ? articles : [];
+  const categories = ['ALL', ...Array.from(new Set(safeArticles.map((a) => a.category)))];
 
   const filtered = categoryFilter === 'ALL'
-    ? articles
-    : articles.filter((a) => a.category === categoryFilter);
+    ? safeArticles
+    : safeArticles.filter((a) => a.category === categoryFilter);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
