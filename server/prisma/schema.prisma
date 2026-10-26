@@ -1,0 +1,323 @@
+// Prisma schema for City Hospital Pune
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  role         String       // PATIENT, DOCTOR, NURSE, LAB_STAFF, RECEPTIONIST, ADMIN
+  firstName    String
+  lastName     String
+  phone        String?
+  avatar       String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  patientProfile Patient?
+  doctorProfile  Doctor?
+  auditEvents    AuditEvent[]
+  notifications  Notification[]
+}
+
+model Department {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  code        String       @unique
+  description String
+  icon        String
+  floor       String
+  doctors     Doctor[]
+  appointments Appointment[]
+}
+
+model Doctor {
+  id              String       @id @default(cuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  licenseNumber   String       @unique
+  departmentId    String
+  department      Department   @relation(fields: [departmentId], references: [id])
+  specialization  String
+  qualifications  String
+  experienceYears Int
+  consultationFee Float
+  roomNumber      String
+  bio             String
+  isAvailable     Boolean      @default(true)
+  availability    String?      // JSON string of days/slots e.g. ["Mon 09:00-13:00", "Tue 09:00-13:00"]
+  
+  appointments    Appointment[]
+  encounters      Encounter[]
+  labOrders       LabOrder[]
+  aiReviews       SymptomAssessment[]
+}
+
+model Patient {
+  id                    String              @id @default(cuid())
+  userId                String              @unique
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patientId             String              @unique // e.g. CHP-2026-0001
+  dateOfBirth           String
+  gender                String              // Male, Female, Other
+  bloodGroup            String              // A+, B+, O+, AB+, etc.
+  emergencyContactName  String
+  emergencyContactPhone String
+  address               String
+  abhaId                String?             // Ayushman Bharat Health Account ID format: 14-digit
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  appointments          Appointment[]
+  encounters            Encounter[]
+  vitals                VitalSign[]
+  allergies             Allergy[]
+  medications           Medication[]
+  labOrders             LabOrder[]
+  assessments           SymptomAssessment[]
+  triageRecords         TriageRecord[]
+  consentRecords        ConsentRecord[]
+  documents             MedicalDocument[]
+}
+
+model Appointment {
+  id              String       @id @default(cuid())
+  patientId       String
+  patient         Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId        String
+  doctor          Doctor       @relation(fields: [doctorId], references: [id])
+  departmentId    String
+  department      Department   @relation(fields: [departmentId], references: [id])
+  appointmentDate String       // YYYY-MM-DD
+  timeSlot        String       // e.g. 10:00 AM - 10:30 AM
+  status          String       @default("SCHEDULED") // SCHEDULED, CHECKED_IN, IN_CONSULTATION, COMPLETED, CANCELLED
+  type            String       @default("ROUTINE")   // ROUTINE, FOLLOW_UP, EMERGENCY_TRIAGE, TELECONSULT
+  reason          String
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  encounter       Encounter?
+  triageRecord    TriageRecord?
+}
+
+model VitalSign {
+  id               String   @id @default(cuid())
+  patientId        String
+  patient          Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  recordedById     String   // User ID
+  recordedByRole   String   // NURSE, DOCTOR
+  systolicBp       Int
+  diastolicBp      Int
+  heartRate        Int
+  respiratoryRate  Int
+  oxygenSaturation Float    // SpO2 %
+  temperatureF     Float
+  painScore        Int      @default(0) // 0-10
+  notes            String?
+  recordedAt       DateTime @default(now())
+}
+
+model Allergy {
+  id            String   @id @default(cuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  allergen      String
+  reaction      String
+  severity      String   // MILD, MODERATE, SEVERE
+  diagnosedDate String?
+  createdAt     DateTime @default(now())
+}
+
+model Medication {
+  id             String    @id @default(cuid())
+  patientId      String
+  patient        Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  encounterId    String?
+  encounter      Encounter? @relation(fields: [encounterId], references: [id])
+  medicationName String
+  dosage         String    // e.g. 500mg
+  frequency      String    // e.g. Twice daily after food
+  route          String    @default("Oral")
+  duration       String    // e.g. 5 days
+  instructions   String?
+  prescribedBy   String    // Doctor name/id
+  status         String    @default("ACTIVE") // ACTIVE, COMPLETED, DISCONTINUED
+  startDate      DateTime  @default(now())
+  endDate        DateTime?
+}
+
+model Encounter {
+  id                      String       @id @default(cuid())
+  appointmentId           String       @unique
+  appointment             Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  patientId               String
+  patient                 Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId                String
+  doctor                  Doctor       @relation(fields: [doctorId], references: [id])
+  chiefComplaint          String
+  historyOfPresentIllness String
+  examinationNotes        String
+  diagnosis               String
+  icdCode                 String?
+  treatmentPlan           String
+  followUpDate            String?
+  status                  String       @default("COMPLETED") // IN_PROGRESS, COMPLETED, SIGNED
+  signedAt                DateTime?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  medications             Medication[]
+  labOrders               LabOrder[]
+}
+
+model SymptomAssessment {
+  id                        String    @id @default(cuid())
+  patientId                 String
+  patient                   Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  sessionNumber             String    @unique // e.g. SA-2026-9021
+  ageGroup                  String    // Child, Young Adult, Adult, Senior
+  chiefComplaint            String
+  symptomsJson              String    // JSON string array of symptoms with duration, location, severity
+  followUpAnswersJson       String?   // JSON object of questionnaire responses
+  safetyAlertTriggered      Boolean   @default(false)
+  emergencyReason           String?
+  aiUrgencyLevel            String    // EMERGENCY, HIGH, MODERATE, LOW
+  aiSummary                 String
+  aiPossibleExplanationsJson String   // JSON array of possible explanations to discuss
+  aiQuestionsForDoctorJson  String    // JSON array of clinician questions
+  aiReferencesJson          String    // JSON array of trusted medical references (WHO, MoHFW, NHS, etc.)
+  isAiGenerated             Boolean   @default(true)
+  clinicianReviewStatus     String    @default("PENDING") // PENDING, ACCEPTED, MODIFIED, REJECTED
+  clinicianNotes            String?
+  reviewedById              String?
+  reviewedByDoctor          Doctor?   @relation(fields: [reviewedById], references: [id])
+  reviewedAt                DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+}
+
+model TriageRecord {
+  id                 String       @id @default(cuid())
+  patientId          String
+  patient            Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointmentId      String?      @unique
+  appointment        Appointment? @relation(fields: [appointmentId], references: [id])
+  recordedById       String       // Nurse User ID
+  triageCategory     String       // RED (Immediate), ORANGE (Very Urgent), YELLOW (Urgent), GREEN (Standard), BLUE (Non-Urgent)
+  painScale          Int          @default(0) // 0-10
+  mobilityStatus     String       // Ambulatory, Wheelchair, Stretcher
+  vitalsSnapshotJson String       // JSON of vitals at triage
+  nurseNotes         String
+  escalatedToDoctorId String?
+  createdAt          DateTime     @default(now())
+}
+
+model LabCatalog {
+  id              String     @id @default(cuid())
+  testCode        String     @unique // e.g. CBC-01, LIPID-02
+  testName        String
+  department      String     // Hematology, Biochemistry, Pathology, Microbiology
+  sampleType      String     // Blood (EDTA), Serum, Urine, Swab
+  turnAroundHours Int
+  standardFee     Float
+  normalRangeMin  Float?
+  normalRangeMax  Float?
+  unit            String
+  interpretation  String?
+  results         LabResult[]
+}
+
+model LabOrder {
+  id                 String       @id @default(cuid())
+  orderNumber        String       @unique // e.g. LAB-2026-4401
+  patientId          String
+  patient            Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId           String
+  doctor             Doctor       @relation(fields: [doctorId], references: [id])
+  encounterId        String?
+  encounter          Encounter?   @relation(fields: [encounterId], references: [id])
+  clinicalIndication String
+  status             String       @default("ORDERED") // ORDERED, SAMPLE_COLLECTED, PROCESSING, COMPLETED, VERIFIED, CANCELLED
+  sampleCollectedAt  DateTime?
+  completedAt        DateTime?
+  verifiedById       String?      // Lab staff ID
+  verifiedAt         DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  results            LabResult[]
+  documents          MedicalDocument[]
+}
+
+model LabResult {
+  id             String     @id @default(cuid())
+  labOrderId     String
+  labOrder       LabOrder   @relation(fields: [labOrderId], references: [id], onDelete: Cascade)
+  catalogTestId  String
+  catalogItem    LabCatalog @relation(fields: [catalogTestId], references: [id])
+  testName       String
+  value          String     // Numeric or string result e.g. "13.8" or "Negative"
+  unit           String
+  referenceRange String     // e.g. "12.0 - 15.5"
+  flag           String     @default("NORMAL") // NORMAL, HIGH, LOW, CRITICAL
+  technicianNotes String?
+  reportedAt     DateTime   @default(now())
+}
+
+model MedicalDocument {
+  id               String    @id @default(cuid())
+  title            String
+  documentType     String    // LAB_REPORT, VISIT_SUMMARY, DISCHARGE_SUMMARY, PRESCRIPTION
+  patientId        String
+  patient          Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  labOrderId       String?
+  labOrder         LabOrder? @relation(fields: [labOrderId], references: [id])
+  fileUrl          String?
+  fileSize         String?
+  verificationHash String?
+  createdAt        DateTime  @default(now())
+}
+
+model ConsentRecord {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  consentType String   // DPDP_DATA_PROCESSING, AI_ASSESSMENT_CONSENT, TELECONSULT_CONSENT, LAB_PROCESSING
+  granted     Boolean  @default(true)
+  grantedAt   DateTime @default(now())
+  ipAddress   String?
+  userAgent   String?
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   // APPOINTMENT, LAB_RESULT, TRIAGE_ALERT, SYSTEM
+  isRead    Boolean  @default(false)
+  actionUrl String?
+  createdAt DateTime @default(now())
+}
+
+model AuditEvent {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userEmail  String?
+  userRole   String?
+  action     String   // VIEW, CREATE, UPDATE, DELETE, SIGN_OFF, AI_REVIEW, LOGIN, EXPORT
+  entityType String   // PATIENT, ENCOUNTER, LAB_ORDER, ASSESSMENT, APPOINTMENT, SYSTEM, AUTH
+  entityId   String?
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+}
